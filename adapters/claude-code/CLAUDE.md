@@ -10,8 +10,9 @@ This file enables adversarial testing in Claude Code. Two Claude instances colla
 
 Copy these files to your project:
 - This `CLAUDE.md` → project root
-- `references/for-developer-ai.md` → `docs/adversarial/dev-spec.md`
-- `references/for-adversarial-ai.md` → `docs/adversarial/adv-spec.md`
+- `tools/developer-ai-spec.md` → `docs/adversarial/dev-spec.md`
+- `tools/adversarial-ai-spec.md` → `docs/adversarial/adv-spec.md`
+- `tools/templates/rules-of-engagement.md` → `docs/adversarial/roe.md`
 
 ## Usage
 

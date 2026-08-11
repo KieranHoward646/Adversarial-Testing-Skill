@@ -7,11 +7,12 @@
    cp .cursorrules /path/to/your-project/
    ```
 
-2. Copy the two spec files into `.cursor/rules/`:
+2. Copy spec and payload files into `.cursor/rules/`:
    ```bash
    mkdir -p /path/to/your-project/.cursor/rules/
-   cp ../../references/for-developer-ai.md /path/to/your-project/.cursor/rules/dev-spec.md
-   cp ../../references/for-adversarial-ai.md /path/to/your-project/.cursor/rules/adv-spec.md
+   cp ../../tools/developer-ai-spec.md /path/to/your-project/.cursor/rules/dev-spec.md
+   cp ../../tools/adversarial-ai-spec.md /path/to/your-project/.cursor/rules/adv-spec.md
+   cp ../../tools/templates/rules-of-engagement.md /path/to/your-project/.cursor/rules/roe.md
    ```
 
 3. In Cursor, the rules are automatically loaded. You can now say "对抗测试 <your product>" to start.

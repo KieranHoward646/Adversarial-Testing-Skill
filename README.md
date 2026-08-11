@@ -11,10 +11,19 @@
 
 ### What is this?
 
-A cross-platform adversarial testing framework where two AI agents collaborate:
+A cross-platform adversarial testing framework with a **theory + tools closed loop**:
 
-1. **Developer AI** — Analyzes the target product and produces a structured summary covering every entry point, input constraint, error scenario, and test target across six categories (boundary, injection, auth, concurrency, exception, business logic).
-2. **Adversarial AI** — Reads only the summary (zero knowledge of source code), safely executes destructive tests, auto-fixes issues within safe boundaries, and produces a comprehensive test report.
+**Theory layer** — Read to understand the methodology:
+- Complete attack taxonomy (general 6 categories + LLM 10 categories + network + ML)
+- 4-phase methodology with threat modeling
+- Real-world case studies (2023-2026)
+- 30/60/90-day implementation roadmap
+
+**Tools layer** — Use to execute tests:
+- **Developer AI** — Analyzes the target product and produces a structured summary covering every entry point and test target
+- **Adversarial AI** — Reads only the summary (zero knowledge of source code), safely executes tests, auto-fixes issues
+- Templates for summaries, reports, and Rules of Engagement
+- Attack payload libraries (SQL injection, XSS, LLM jailbreak, SSL mutation)
 
 The adversarial AI is intentionally **blind** to the product internals — just like a real attacker.
 
@@ -24,7 +33,7 @@ This repo provides **one core spec** + **multiple platform adapters**. Pick the 
 
 | Platform | Adapter | Multi-Agent? | Setup |
 |----------|---------|:-----------:|-------|
-| **WorkBuddy** | Root `SKILL.md` + `references/` | ✅ Native Agent tool | Copy to `~/.workbuddy/skills/` |
+| **WorkBuddy** | Root `SKILL.md` + `theory/` + `tools/` | ✅ Native Agent tool | Copy to `~/.workbuddy/skills/` |
 | **Cursor** | `adapters/cursor/` | ✅ Two sessions | Copy `.cursorrules` + spec files to project |
 | **Claude Code** | `adapters/claude-code/` | ✅ Two sessions | Copy `CLAUDE.md` + spec files to project |
 | **TRAE IDE / Codex / Copilot / Windsurf / others** | `adapters/generic/` | ⚠️ Manual two-session | Use self-contained `DEVELOPER.md` and `ADVERSARIAL.md` |
@@ -96,20 +105,30 @@ adversarial-testing/
 ├── SKILL.md                           # WorkBuddy orchestration (native Agent spawning)
 ├── README.md                          # This file
 ├── LICENSE                            # MIT
-├── references/                        # Universal core specs (shared by all adapters)
-│   ├── for-developer-ai.md            # Developer AI output format (9 sections)
-│   └── for-adversarial-ai.md          # Adversarial AI safety & testing protocol (4 phases)
-└── adapters/
-    ├── cursor/                        # Cursor IDE adapter
-    │   ├── .cursorrules               # Cursor rules (orchestration)
-    │   └── INSTALL.md                 # Setup guide
-    ├── claude-code/                   # Claude Code adapter
-    │   ├── CLAUDE.md                  # Claude Code instructions
-    │   └── INSTALL.md                 # Setup guide
-    └── generic/                       # Fallback for any AI assistant
-        ├── DEVELOPER.md               # Self-contained developer AI prompt
-        ├── ADVERSARIAL.md             # Self-contained adversarial AI prompt
-        └── INSTALL.md                 # Setup guide
+│
+├── theory/                            # THEORY — knowledge base & methodology
+│   ├── 01-overview.md                 #   What & why of adversarial testing
+│   ├── 02-attack-taxonomy.md          #   Complete attack classification (A/B/C/D)
+│   ├── 03-methodology.md              #   4-phase workflow + threat modeling
+│   ├── 04-case-studies.md             #   Real incidents 2023-2026
+│   └── 05-roadmap.md                  #   30/60/90-day plan + maturity model
+│
+├── tools/                             # TOOLS — executable specs & payloads
+│   ├── developer-ai-spec.md           #   Developer AI output format (9 sections)
+│   ├── adversarial-ai-spec.md         #   Adversarial AI safety & testing (4 phases)
+│   ├── templates/
+│   │   ├── summary-template.md        #   Blank summary scaffold
+│   │   ├── report-template.md         #   Blank report scaffold
+│   │   └── rules-of-engagement.md     #   Pre-test boundary definition
+│   └── payloads/
+│       ├── injection-payloads.md      #   SQL/XSS/Command/SSTI (A2)
+│       ├── llm-payloads.md            #   Prompt injection/jailbreak (B1-B8)
+│       └── ssl-payloads.md            #   Certificate mutation strategies (C1-C2)
+│
+└── adapters/                          # Platform adapters
+    ├── cursor/                        #   Cursor IDE
+    ├── claude-code/                   #   Claude Code
+    └── generic/                       #   Fallback (TRAE, Codex, Copilot, etc.)
 ```
 
 ---
@@ -118,12 +137,19 @@ adversarial-testing/
 
 ### 这是什么？
 
-一个跨平台的对抗测试框架，双 AI 协作：
+一个跨平台的对抗测试框架，形成**理论 + 工具闭环**：
 
-1. **开发者 AI** — 分析目标产品，输出结构化摘要，覆盖所有入口、输入约束、错误场景，以及六大类测试目标（边界 / 注入 / 权限 / 并发 / 异常 / 业务逻辑）。
-2. **对抗测试 AI** — 仅阅读摘要（对源码零知识），安全执行破坏性测试，在安全边界内自动修复问题，输出完整测试报告。
+**理论层** — 阅读以理解方法论：
+- 完整攻击分类体系（通用 6 类 + LLM 10 类 + 网络协议 + ML）
+- 四阶段方法论含威胁建模
+- 真实案例时间线（2023-2026）
+- 30/60/90 天实施路线图
 
-对抗测试 AI 故意被设计为对产品内部实现**盲测** —— 模拟真实攻击场景。
+**工具层** — 用于执行测试：
+- **开发者 AI** — 分析目标产品，输出覆盖所有入口和测试目标的结构化摘要
+- **对抗测试 AI** — 仅阅读摘要（对源码零知识），安全执行测试并自动修复
+- 模板：摘要、报告、交战规则
+- 攻击载荷库：SQL 注入、XSS、LLM 越狱、SSL 变异
 
 ### 选择你的平台
 
@@ -131,7 +157,7 @@ adversarial-testing/
 
 | 平台 | 适配器 | 多Agent？ | 安装方式 |
 |------|--------|:------:|------|
-| **WorkBuddy** | 根目录 `SKILL.md` + `references/` | ✅ 原生 Agent 工具 | 复制到 `~/.workbuddy/skills/` |
+| **WorkBuddy** | 根目录 `SKILL.md` + `theory/` + `tools/` | ✅ 原生 Agent 工具 | 复制到 `~/.workbuddy/skills/` |
 | **Cursor** | `adapters/cursor/` | ✅ 双会话 | 复制 `.cursorrules` + 规范文件到项目 |
 | **Claude Code** | `adapters/claude-code/` | ✅ 双会话 | 复制 `CLAUDE.md` + 规范文件到项目 |
 | **TRAE IDE / Codex / Copilot / Windsurf 等** | `adapters/generic/` | ⚠️ 手动双会话 | 使用自包含的 `DEVELOPER.md` 和 `ADVERSARIAL.md` |
@@ -160,8 +186,8 @@ WorkBuddy 原生支持派生两个独立 Agent 实例 —— 真正的上下文�
 ```bash
 cp adapters/cursor/.cursorrules /path/to/your-project/
 mkdir -p /path/to/your-project/.cursor/rules/
-cp references/for-developer-ai.md /path/to/your-project/.cursor/rules/dev-spec.md
-cp references/for-adversarial-ai.md /path/to/your-project/.cursor/rules/adv-spec.md
+cp tools/developer-ai-spec.md /path/to/your-project/.cursor/rules/dev-spec.md
+cp tools/adversarial-ai-spec.md /path/to/your-project/.cursor/rules/adv-spec.md
 ```
 
 建议使用**两个 Cursor 会话**实现真正的盲测。
@@ -173,8 +199,8 @@ cp references/for-adversarial-ai.md /path/to/your-project/.cursor/rules/adv-spec
 ```bash
 cp adapters/claude-code/CLAUDE.md /path/to/your-project/
 mkdir -p /path/to/your-project/docs/adversarial/
-cp references/for-developer-ai.md /path/to/your-project/docs/adversarial/dev-spec.md
-cp references/for-adversarial-ai.md /path/to/your-project/docs/adversarial/adv-spec.md
+cp tools/developer-ai-spec.md /path/to/your-project/docs/adversarial/dev-spec.md
+cp tools/adversarial-ai-spec.md /path/to/your-project/docs/adversarial/adv-spec.md
 ```
 
 建议使用**两个 Claude Code 终端会话**实现真正的盲测。
@@ -203,20 +229,30 @@ adversarial-testing/
 ├── SKILL.md                           # WorkBuddy 编排层（原生 Agent 派生）
 ├── README.md                          # 本文件
 ├── LICENSE                            # MIT
-├── references/                        # 通用核心规范（所有适配器共享）
-│   ├── for-developer-ai.md            # 开发者 AI 输出格式（9 章节）
-│   └── for-adversarial-ai.md          # 对抗测试 AI 安全与测试协议（4 阶段）
-└── adapters/
-    ├── cursor/                        # Cursor IDE 适配器
-    │   ├── .cursorrules               # Cursor 规则（编排）
-    │   └── INSTALL.md                 # 安装指南
-    ├── claude-code/                   # Claude Code 适配器
-    │   ├── CLAUDE.md                  # Claude Code 指令
-    │   └── INSTALL.md                 # 安装指南
-    └── generic/                       # 通用兜底（适配任意 AI 助手）
-        ├── DEVELOPER.md               # 自包含开发者 AI 提示词
-        ├── ADVERSARIAL.md             # 自包含对抗测试 AI 提示词
-        └── INSTALL.md                 # 安装指南
+│
+├── theory/                            # 理论 — 知识库与方法论
+│   ├── 01-overview.md                 #   什么是对抗测试，为什么重要
+│   ├── 02-attack-taxonomy.md          #   完整攻击分类（A/B/C/D 四大类）
+│   ├── 03-methodology.md              #   四阶段方法论 + 威胁建模
+│   ├── 04-case-studies.md             #   真实安全事件（2023-2026）
+│   └── 05-roadmap.md                  #   30/60/90 天计划 + 成熟度模型
+│
+├── tools/                             # 工具 — 可执行规范与载荷库
+│   ├── developer-ai-spec.md           #   开发者 AI 输出规范（9 章节）
+│   ├── adversarial-ai-spec.md         #   对抗测试 AI 安全协议（4 阶段）
+│   ├── templates/
+│   │   ├── summary-template.md        #   摘要空白模板
+│   │   ├── report-template.md         #   报告空白模板
+│   │   └── rules-of-engagement.md     #   交战规则模板
+│   └── payloads/
+│       ├── injection-payloads.md      #   SQL/XSS/命令注入载荷（A2）
+│       ├── llm-payloads.md            #   提示词注入/越狱载荷（B1-B8）
+│       └── ssl-payloads.md            #   证书变异策略（C1-C2）
+│
+└── adapters/                          # 平台适配器
+    ├── cursor/                        #   Cursor IDE
+    ├── claude-code/                   #   Claude Code
+    └── generic/                       #   通用兜底（TRAE/Codex/Copilot 等）
 ```
 
 ---

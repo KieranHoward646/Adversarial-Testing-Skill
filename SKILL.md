@@ -9,7 +9,11 @@ agent_created: true
 
 ## Overview
 
-Orchestrate a two-phase adversarial testing pipeline. **By default, uses true multi-AI collaboration**: two independent Agent instances with separate context windows — the Developer AI deeply understands the product, while the Adversarial AI sees ONLY the structured summary (true blind adversarial stance).
+Orchestrate a two-phase adversarial testing pipeline with a **theory + tools** closed loop. **By default, uses true multi-AI collaboration**: two independent Agent instances with separate context windows — the Developer AI deeply understands the product, while the Adversarial AI sees ONLY the structured summary (true blind adversarial stance).
+
+**Theory layer** (`theory/`): Knowledge base covering attack taxonomy (general + LLM + network), methodology, case studies, and implementation roadmap. Read for understanding; reference during testing.
+
+**Tools layer** (`tools/`): Executable specs, templates, and payload libraries. The AI agents use these directly during execution.
 
 ## When to Use
 
@@ -51,7 +55,7 @@ This is the recommended mode. Two independent Agent instances with **separate co
 │  Step 1: Spawn Developer Agent                      │
 │  ┌───────────────────────────────────────┐          │
 │  │  Agent: developer-ai                  │          │
-│  │  Reads: references/for-developer-ai.md│          │
+│  │  Reads: tools/developer-ai-spec.md     │          │
 │  │  Does: Analyze product → Output summary│          │
 │  │  Output: adversarial-test-summary.md   │          │
 │  └───────────────────────────────────────┘          │
@@ -62,7 +66,7 @@ This is the recommended mode. Two independent Agent instances with **separate co
 │  ┌───────────────────────────────────────┐          │
 │  │  Agent: adversarial-ai                │          │
 │  │  Reads: summary.md +                  │          │
-│  │         references/for-adversarial-ai.md│         │
+│  │         tools/adversarial-ai-spec.md   │         │
 │  │  Does: Safety check → Test → Fix       │          │
 │  │  Output: adversarial-test-report.md    │          │
 │  └───────────────────────────────────────┘          │
@@ -89,13 +93,15 @@ Agent tool parameters:
     **Target product**: [describe what to test — file paths, repo location, etc.]
 
     **Instructions**:
-    1. Read the reference spec at:
-       C:/Users/DELL/.workbuddy/skills/adversarial-testing/references/for-developer-ai.md
-    2. Analyze the target product thoroughly: read source code, understand architecture,
+    1. Read the reference spec at the skill's `tools/developer-ai-spec.md`
+    2. For LLM/AI products, also read `theory/02-attack-taxonomy.md` for the LLM-specific categories (B1-B8)
+    3. Use `tools/templates/summary-template.md` as the output scaffold
+    4. Refer to `tools/payloads/` for attack payload ideas when describing test targets
+    5. Analyze the target product thoroughly: read source code, understand architecture,
        identify ALL entry points (API endpoints, function signatures, CLI, UI inputs).
-    3. Produce the summary STRICTLY following the format in the reference spec.
-    4. Write output to: <workspace>/adversarial-test-summary-<product-name>.md
-    5. Return: the file path of the saved summary and a brief confirmation.
+    6. Produce the summary STRICTLY following the format in the reference spec.
+    7. Write output to: <workspace>/adversarial-test-summary-<product-name>.md
+    8. Return: the file path of the saved summary and a brief confirmation.
 ```
 
 Run this agent in the **foreground** (need the summary before proceeding). Wait for it to complete and confirm the summary file exists.
@@ -117,15 +123,17 @@ Agent tool parameters:
 
     **Instructions**:
     1. Read the summary file at the path above.
-    2. Read the safety & testing spec at:
-       C:/Users/DELL/.workbuddy/skills/adversarial-testing/references/for-adversarial-ai.md
-    3. Follow the 4-phase workflow from the spec:
+    2. Read the safety & testing spec at the skill's `tools/adversarial-ai-spec.md`
+    3. Read `tools/templates/rules-of-engagement.md` and confirm the test boundaries
+    4. Follow the 4-phase workflow from the spec:
        Phase 1: Parse summary, verify completeness
        Phase 2: Safety verification (MANDATORY — check all forbidden operations)
-       Phase 3: Execute tests in strict order (boundary → injection → auth → concurrency → exception → business logic)
+       Phase 3: Execute tests in strict order (see `theory/02-attack-taxonomy.md` for category details)
        Phase 4: For each FAIL, determine if safe to auto-fix. Fix or escalate.
-    4. Write final report to: <workspace>/adversarial-test-report-<product-name>.md
-    5. Return: summary of findings (PASS/FAIL counts, any critical issues).
+    5. Use `tools/templates/report-template.md` as the report scaffold
+    6. Reference `tools/payloads/` for ready-made attack payloads
+    7. Write final report to: <workspace>/adversarial-test-report-<product-name>.md
+    8. Return: summary of findings (PASS/FAIL counts, any critical issues).
 
     **IMPORTANT**: You have NO knowledge of the product internals. You ONLY have the summary.
     This is by design — you are a true adversarial tester. Use ONLY the summary to understand
@@ -164,7 +172,9 @@ The handoff gate gives the user a chance to:
 When user says "只要总结" / "developer only".
 
 ```
-Read references/for-developer-ai.md
+Read tools/developer-ai-spec.md
+→ Read theory/02-attack-taxonomy.md (if LLM product)
+→ Read tools/templates/summary-template.md
 → Analyze product → Produce summary → Save as .md → Done
 ```
 
@@ -175,7 +185,8 @@ Output: `<workspace>/adversarial-test-summary-<product>.md`
 When user says "只要测试" / "adversarial only" + provides summary file path.
 
 ```
-Read references/for-adversarial-ai.md
+Read tools/adversarial-ai-spec.md
+→ Read tools/templates/rules-of-engagement.md
 → Read summary → Safety check → Execute tests → Fix → Report → Done
 ```
 
@@ -190,8 +201,33 @@ If no summary path provided, ask: "请提供开发者AI生成的摘要文件路�
 
 ## Resources
 
-### references/for-developer-ai.md
-Complete specification for the Developer AI output format. Load before Phase 1. Covers all nine required sections, writing standards, risk level definitions, and a worked example.
+### Theory Layer (`theory/`)
 
-### references/for-adversarial-ai.md
-Complete specification for Adversarial AI workflow. Load before Phase 2. Covers safety verification protocol, six-category test execution order, fix rules, and final report format.
+| File | Purpose |
+|------|---------|
+| `01-overview.md` | What adversarial testing is and why it matters |
+| `02-attack-taxonomy.md` | Complete attack classification (A: general, B: LLM, C: network, D: ML) |
+| `03-methodology.md` | 4-phase workflow, threat modeling, Rules of Engagement |
+| `04-case-studies.md` | Real-world security incidents timeline (2023-2026) |
+| `05-roadmap.md` | 30/60/90-day implementation plan and maturity model |
+
+### Tools Layer (`tools/`)
+
+| File | Purpose |
+|------|---------|
+| `developer-ai-spec.md` | Developer AI output format specification (9-section) |
+| `adversarial-ai-spec.md` | Adversarial AI safety & testing protocol (4-phase) |
+| `templates/summary-template.md` | Blank adversarial test summary template |
+| `templates/report-template.md` | Blank test report template |
+| `templates/rules-of-engagement.md` | Pre-test scope and boundary definition |
+| `payloads/injection-payloads.md` | SQL/XSS/Command/SSTI injection payloads (A2) |
+| `payloads/llm-payloads.md` | Prompt injection, jailbreak, system prompt leakage payloads (B1-B8) |
+| `payloads/ssl-payloads.md` | SSL/TLS certificate mutation strategies (C1-C2) |
+
+### Platform Adapters (`adapters/`)
+
+| Directory | Platform |
+|-----------|----------|
+| `cursor/` | Cursor IDE (.cursorrules + install guide) |
+| `claude-code/` | Claude Code (CLAUDE.md + install guide) |
+| `generic/` | Any AI assistant (self-contained DEVELOPER.md + ADVERSARIAL.md)

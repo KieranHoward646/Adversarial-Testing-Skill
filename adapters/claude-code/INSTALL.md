@@ -10,8 +10,9 @@
 2. Copy the spec files:
    ```bash
    mkdir -p /path/to/your-project/docs/adversarial/
-   cp ../../references/for-developer-ai.md /path/to/your-project/docs/adversarial/dev-spec.md
-   cp ../../references/for-adversarial-ai.md /path/to/your-project/docs/adversarial/adv-spec.md
+   cp ../../tools/developer-ai-spec.md /path/to/your-project/docs/adversarial/dev-spec.md
+   cp ../../tools/adversarial-ai-spec.md /path/to/your-project/docs/adversarial/adv-spec.md
+   cp ../../tools/templates/rules-of-engagement.md /path/to/your-project/docs/adversarial/roe.md
    ```
 
 3. Start Claude Code in your project directory. The `CLAUDE.md` is auto-loaded.
