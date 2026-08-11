@@ -1,7 +1,7 @@
 # Adversarial Testing Skill
 
-> Multi-AI collaborative adversarial testing workflow for WorkBuddy.  
-> 面向 WorkBuddy 的多 AI 协作对抗测试工作流技能。
+> Multi-AI collaborative adversarial testing workflow — platform-agnostic core + per-platform adapters.  
+> 多 AI 协作对抗测试工作流 —— 平台无关的核心规范 + 各平台适配器。
 
 [English](#english) | [中文](#中文)
 
@@ -11,65 +11,105 @@
 
 ### What is this?
 
-A WorkBuddy skill that orchestrates a two-AI adversarial testing pipeline:
+A cross-platform adversarial testing framework where two AI agents collaborate:
 
 1. **Developer AI** — Analyzes the target product and produces a structured summary covering every entry point, input constraint, error scenario, and test target across six categories (boundary, injection, auth, concurrency, exception, business logic).
 2. **Adversarial AI** — Reads only the summary (zero knowledge of source code), safely executes destructive tests, auto-fixes issues within safe boundaries, and produces a comprehensive test report.
 
-The adversarial AI is intentionally **blind** to the product internals — it only sees the structured summary. This mirrors real-world attack scenarios where attackers must infer behavior from external interfaces.
+The adversarial AI is intentionally **blind** to the product internals — just like a real attacker.
 
-### Installation
+### Choose Your Platform
 
-Place this directory under your WorkBuddy skills path:
+This repo provides **one core spec** + **multiple platform adapters**. Pick the one that matches your AI coding assistant:
+
+| Platform | Adapter | Multi-Agent? | Setup |
+|----------|---------|:-----------:|-------|
+| **WorkBuddy** | Root `SKILL.md` + `references/` | ✅ Native Agent tool | Copy to `~/.workbuddy/skills/` |
+| **Cursor** | `adapters/cursor/` | ✅ Two sessions | Copy `.cursorrules` + spec files to project |
+| **Claude Code** | `adapters/claude-code/` | ✅ Two sessions | Copy `CLAUDE.md` + spec files to project |
+| **TRAE IDE / Codex / Copilot / Windsurf / others** | `adapters/generic/` | ⚠️ Manual two-session | Use self-contained `DEVELOPER.md` and `ADVERSARIAL.md` |
+
+> **Which should I choose?** If you use WorkBuddy, use the root files (native integration). For Cursor or Claude Code, use their adapters (they support file-based rules). For everything else, use the generic adapter (self-contained prompt files).
+
+### Platform Details
+
+#### WorkBuddy (Native)
+
+Copy the entire repo to `~/.workbuddy/skills/adversarial-testing/`. Then just say:
 
 ```
-~/.workbuddy/skills/adversarial-testing/
+@adversarial-testing <product>                        # Full pipeline (default, multi-agent)
+@adversarial-testing sequential <product>             # With review gate
+@adversarial-testing developer <product>              # Summary only
+@adversarial-testing adversarial <summary-path>       # Test only
 ```
 
-Or copy it to a project-level path:
+WorkBuddy natively spawns two independent Agent instances — true context isolation.
 
+#### Cursor
+
+See `adapters/cursor/INSTALL.md`. Quick setup:
+
+```bash
+cp adapters/cursor/.cursorrules /path/to/your-project/
+mkdir -p /path/to/your-project/.cursor/rules/
+cp references/for-developer-ai.md /path/to/your-project/.cursor/rules/dev-spec.md
+cp references/for-adversarial-ai.md /path/to/your-project/.cursor/rules/adv-spec.md
 ```
-<project>/.workbuddy/skills/adversarial-testing/
+
+Use **two Cursor chat sessions** for true blind testing.
+
+#### Claude Code
+
+See `adapters/claude-code/INSTALL.md`. Quick setup:
+
+```bash
+cp adapters/claude-code/CLAUDE.md /path/to/your-project/
+mkdir -p /path/to/your-project/docs/adversarial/
+cp references/for-developer-ai.md /path/to/your-project/docs/adversarial/dev-spec.md
+cp references/for-adversarial-ai.md /path/to/your-project/docs/adversarial/adv-spec.md
 ```
 
-### Usage
+Use **two Claude Code terminal sessions** for true blind testing.
 
-| What you say | What happens |
-|-------------|-------------|
-| `@adversarial-testing <product>` | **Full pipeline** (default) — two independent AI agents collaborate. Developer analyzes & summarizes, then Adversarial tests & fixes. |
-| `@adversarial-testing sequential <product>` | Same two phases, but with a **review gate** between them. You can inspect the summary before testing begins. |
-| `@adversarial-testing developer <product>` | **Summary only** — just produce the adversarial test summary, no testing. |
-| `@adversarial-testing adversarial <summary-path>` | **Test only** — run tests against an existing summary file. |
+#### Generic (TRAE IDE, Codex, Copilot, Windsurf, etc.)
 
-Chinese triggers also work: "对抗测试", "安全测试", "只要总结", "只要测试".
+See `adapters/generic/INSTALL.md`. Uses two **self-contained prompt files** — no external dependencies:
 
-### Output Files
+1. Open AI assistant → paste `adapters/generic/DEVELOPER.md` as system prompt → generate summary
+2. Open a **NEW session** → paste `adapters/generic/ADVERSARIAL.md` as system prompt → execute tests
 
-| File | Produced by |
-|------|-------------|
-| `adversarial-test-summary-<product>.md` | Developer AI (Phase 1) |
-| `adversarial-test-report-<product>.md` | Adversarial AI (Phase 2) |
+The generic files embed the full spec inline, so they work on any platform without needing file path references.
 
-### Safety Guarantees
-
-The Adversarial AI enforces a non-negotiable safety protocol:
+### Safety Guarantees (all platforms)
 
 - ❌ No `DROP`, `TRUNCATE`, or unconditional `DELETE`
 - ❌ No modification of production data or config files
 - ❌ No real external requests (emails, SMS, payments)
 - ❌ Injection testing stops immediately if a real vulnerability is found
-- ✅ All destructive operations require explicit safe-boundary declarations in the summary
+- ✅ All destructive operations require explicit safe-boundary declarations
 
-### Files
+### File Structure
 
 ```
 adversarial-testing/
-├── SKILL.md                           # Orchestration layer (workflow, decision tree, agent spawning)
+├── SKILL.md                           # WorkBuddy orchestration (native Agent spawning)
 ├── README.md                          # This file
 ├── LICENSE                            # MIT
-└── references/
-    ├── for-developer-ai.md            # Developer AI output specification (9-section format)
-    └── for-adversarial-ai.md          # Adversarial AI safety & testing specification (4-phase workflow)
+├── references/                        # Universal core specs (shared by all adapters)
+│   ├── for-developer-ai.md            # Developer AI output format (9 sections)
+│   └── for-adversarial-ai.md          # Adversarial AI safety & testing protocol (4 phases)
+└── adapters/
+    ├── cursor/                        # Cursor IDE adapter
+    │   ├── .cursorrules               # Cursor rules (orchestration)
+    │   └── INSTALL.md                 # Setup guide
+    ├── claude-code/                   # Claude Code adapter
+    │   ├── CLAUDE.md                  # Claude Code instructions
+    │   └── INSTALL.md                 # Setup guide
+    └── generic/                       # Fallback for any AI assistant
+        ├── DEVELOPER.md               # Self-contained developer AI prompt
+        ├── ADVERSARIAL.md             # Self-contained adversarial AI prompt
+        └── INSTALL.md                 # Setup guide
 ```
 
 ---
@@ -78,65 +118,105 @@ adversarial-testing/
 
 ### 这是什么？
 
-一个 WorkBuddy 技能，编排双 AI 对抗测试流水线：
+一个跨平台的对抗测试框架，双 AI 协作：
 
 1. **开发者 AI** — 分析目标产品，输出结构化摘要，覆盖所有入口、输入约束、错误场景，以及六大类测试目标（边界 / 注入 / 权限 / 并发 / 异常 / 业务逻辑）。
 2. **对抗测试 AI** — 仅阅读摘要（对源码零知识），安全执行破坏性测试，在安全边界内自动修复问题，输出完整测试报告。
 
-对抗测试 AI 故意被设计为对产品内部实现**盲测** —— 它只能看到结构化摘要。这模拟了真实的攻击场景：攻击者只能从外部接口推断系统行为。
+对抗测试 AI 故意被设计为对产品内部实现**盲测** —— 模拟真实攻击场景。
 
-### 安装
+### 选择你的平台
 
-将本目录放入 WorkBuddy 技能路径：
+本仓库提供**一套核心规范** + **多个平台适配器**。根据你使用的 AI 编程助手选择：
+
+| 平台 | 适配器 | 多Agent？ | 安装方式 |
+|------|--------|:------:|------|
+| **WorkBuddy** | 根目录 `SKILL.md` + `references/` | ✅ 原生 Agent 工具 | 复制到 `~/.workbuddy/skills/` |
+| **Cursor** | `adapters/cursor/` | ✅ 双会话 | 复制 `.cursorrules` + 规范文件到项目 |
+| **Claude Code** | `adapters/claude-code/` | ✅ 双会话 | 复制 `CLAUDE.md` + 规范文件到项目 |
+| **TRAE IDE / Codex / Copilot / Windsurf 等** | `adapters/generic/` | ⚠️ 手动双会话 | 使用自包含的 `DEVELOPER.md` 和 `ADVERSARIAL.md` |
+
+> **我该选哪个？** WorkBuddy 用户直接用根目录文件（原生集成）。Cursor 或 Claude Code 用户用对应适配器（支持文件级规则）。其他平台用通用适配器（自包含提示词文件）。
+
+### 平台详情
+
+#### WorkBuddy（原生）
+
+将整个仓库复制到 `~/.workbuddy/skills/adversarial-testing/`。然后直接说：
 
 ```
-~/.workbuddy/skills/adversarial-testing/
+@adversarial-testing <产品>                        # 全流水线（默认，多Agent协作）
+@adversarial-testing sequential <产品>             # 带审核关卡
+@adversarial-testing developer <产品>              # 仅出总结
+@adversarial-testing adversarial <摘要路径>         # 仅执行测试
 ```
 
-或放入项目级路径：
+WorkBuddy 原生支持派生两个独立 Agent 实例 —— 真正的上下文隔离。
 
+#### Cursor
+
+详见 `adapters/cursor/INSTALL.md`。快速安装：
+
+```bash
+cp adapters/cursor/.cursorrules /path/to/your-project/
+mkdir -p /path/to/your-project/.cursor/rules/
+cp references/for-developer-ai.md /path/to/your-project/.cursor/rules/dev-spec.md
+cp references/for-adversarial-ai.md /path/to/your-project/.cursor/rules/adv-spec.md
 ```
-<project>/.workbuddy/skills/adversarial-testing/
+
+建议使用**两个 Cursor 会话**实现真正的盲测。
+
+#### Claude Code
+
+详见 `adapters/claude-code/INSTALL.md`。快速安装：
+
+```bash
+cp adapters/claude-code/CLAUDE.md /path/to/your-project/
+mkdir -p /path/to/your-project/docs/adversarial/
+cp references/for-developer-ai.md /path/to/your-project/docs/adversarial/dev-spec.md
+cp references/for-adversarial-ai.md /path/to/your-project/docs/adversarial/adv-spec.md
 ```
 
-### 使用方式
+建议使用**两个 Claude Code 终端会话**实现真正的盲测。
 
-| 对 WorkBuddy 说 | 效果 |
-|-----------------|------|
-| `@adversarial-testing <产品>` | **全流水线**（默认）— 两个独立 AI Agent 协作。开发者分析出总结，对抗测试者执行测试并修复。 |
-| `@adversarial-testing sequential <产品>` | 同上，但在两阶段之间增加**审核关卡**，你可以先审查摘要再放行测试。 |
-| `@adversarial-testing developer <产品>` | **仅出总结** — 只产��对抗测试摘要，不执行测试。 |
-| `@adversarial-testing adversarial <摘要路径>` | **仅执行测试** — 对已有摘要文件执行对抗测试。 |
+#### 通用适配器（TRAE IDE、Codex、Copilot、Windsurf 等）
 
-中文触发词同样有效："对抗测试"、"安全测试"、"只要总结"、"只要测试"。
+详见 `adapters/generic/INSTALL.md`。使用两个**自包含提示词文件** —— 无外部依赖：
 
-### 输出文件
+1. 打开 AI 助手 → 将 `adapters/generic/DEVELOPER.md` 作为系统提示词粘贴 → 生成摘要
+2. 打开**新会话** → 将 `adapters/generic/ADVERSARIAL.md` 作为系统提示词粘贴 → 执行测试
 
-| 文件 | 产出者 |
-|------|--------|
-| `adversarial-test-summary-<产品>.md` | 开发者 AI（阶段1） |
-| `adversarial-test-report-<产品>.md` | 对抗测试 AI（阶段2） |
+通用适配器将完整规范内嵌在文件中，无需依赖外部文件路径，适配任何平台。
 
-### 安全保障
-
-对抗测试 AI 强制执行不可绕过的安全协议：
+### 安全保障（所有平台通用）
 
 - ❌ 不执行 `DROP`、`TRUNCATE`、无条件 `DELETE`
 - ❌ 不修改生产数据或配置文件
 - ❌ 不发送真实外部请求（邮件、短信、支付）
 - ❌ 注入测试发现真实漏洞后立即停止同类测试
-- ✅ 所有破坏性操作需在摘要 §5 里明确声明安全边界
+- ✅ 所有破坏性操作须在摘要中明确声明安全边界
 
 ### 文件结构
 
 ```
 adversarial-testing/
-├── SKILL.md                           # 编排层（工作流、决策树、Agent 派生逻辑）
+├── SKILL.md                           # WorkBuddy 编排层（原生 Agent 派生）
 ├── README.md                          # 本文件
 ├── LICENSE                            # MIT
-└── references/
-    ├── for-developer-ai.md            # 开发者 AI 输出规范（9 章节格式）
-    └── for-adversarial-ai.md          # 对抗测试 AI 安全与测试规范（4 阶段流程）
+├── references/                        # 通用核心规范（所有适配器共享）
+│   ├── for-developer-ai.md            # 开发者 AI 输出格式（9 章节）
+│   └── for-adversarial-ai.md          # 对抗测试 AI 安全与测试协议（4 阶段）
+└── adapters/
+    ├── cursor/                        # Cursor IDE 适配器
+    │   ├── .cursorrules               # Cursor 规则（编排）
+    │   └── INSTALL.md                 # 安装指南
+    ├── claude-code/                   # Claude Code 适配器
+    │   ├── CLAUDE.md                  # Claude Code 指令
+    │   └── INSTALL.md                 # 安装指南
+    └── generic/                       # 通用兜底（适配任意 AI 助手）
+        ├── DEVELOPER.md               # 自包含开发者 AI 提示词
+        ├── ADVERSARIAL.md             # 自包含对抗测试 AI 提示词
+        └── INSTALL.md                 # 安装指南
 ```
 
 ---
