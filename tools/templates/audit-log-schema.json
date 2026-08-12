@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adversarial-testing.dev/schemas/audit-log-v1.json",
+  "title": "Adversarial Testing Audit Log",
+  "description": "Structured, replayable audit log for every test step executed. Designed for forensic traceability and CI/CD integration.",
+  "type": "object",
+  "required": ["run_id", "started_at", "environment", "phases"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "UUID v4 identifying this test run",
+      "example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the run started"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the run finished"
+    },
+    "product": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": ["type", "isolation_level"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["test", "staging", "development", "production"],
+          "description": "MUST NOT be 'production' for adversarial testing"
+        },
+        "isolation_level": {
+          "type": "string",
+          "enum": ["docker-sandbox", "separate-vm", "test-instance", "none"],
+          "description": "How the test environment is isolated from production"
+        },
+        "backup_status": {
+          "type": "string",
+          "enum": ["completed", "not_needed", "failed"],
+          "description": "Whether a backup was taken before testing"
+        },
+        "backup_location": {
+          "type": "string",
+          "description": "Path to backup if applicable"
+        }
+      }
+    },
+    "safety_checks": {
+      "type": "object",
+      "required": ["status", "checks"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "skipped"]
+        },
+        "failed_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "check": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "non_production_db": { "type": "boolean" },
+            "forbidden_ops_blocked": { "type": "boolean" },
+            "external_requests_disabled": { "type": "boolean" },
+            "backup_completed": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "phases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/phase" }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_tests": { "type": "integer" },
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" },
+        "skipped": { "type": "integer" },
+        "coverage_rate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "critical_findings": { "type": "integer" },
+        "auto_fixed": { "type": "integer" },
+        "needs_human_review": { "type": "integer" }
+      }
+    }
+  },
+  "$defs": {
+    "phase": {
+      "type": "object",
+      "required": ["phase_id", "name", "started_at", "steps"],
+      "properties": {
+        "phase_id": {
+          "type": "string",
+          "enum": ["phase-1-safety", "phase-2-boundary", "phase-3-injection", "phase-4-auth", "phase-5-concurrency", "phase-6-exception", "phase-7-business-logic", "phase-llm", "phase-network"]
+        },
+        "name": { "type": "string" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "finished_at": { "type": "string", "format": "date-time" },
+        "status": {
+          "type": "string",
+          "enum": ["completed", "aborted", "skipped"]
+        },
+        "abort_reason": {
+          "type": "string",
+          "description": "Required if status is 'aborted'. e.g., 'SQL injection confirmed — stopped injection tests per safety protocol.'"
+        },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/step" }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["step_id", "test_id", "timestamp", "action", "verdict"],
+      "properties": {
+        "step_id": { "type": "string", "description": "Unique step identifier within the run" },
+        "test_id": { "type": "string", "description": "Matches the test ID from the summary (e.g. B-001, I-003)" },
+        "category": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "action": {
+          "type": "object",
+          "required": ["type", "target", "input"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["http_request", "cli_command", "function_call", "file_operation", "db_query", "api_call"]
+            },
+            "target": { "type": "string", "description": "URL, command, function name, file path" },
+            "input": { "description": "The exact input/payload sent" },
+            "method": { "type": "string", "description": "HTTP method if applicable" },
+            "headers": { "type": "object" }
+          }
+        },
+        "response": {
+          "type": "object",
+          "properties": {
+            "status_code": { "type": "integer" },
+            "body": { "description": "Full response body (truncated if >10KB)" },
+            "body_truncated": { "type": "boolean" },
+            "duration_ms": { "type": "integer" },
+            "error": { "description": "Any error encountered (connection refused, timeout, etc.)" }
+          }
+        },
+        "expected": {
+          "type": "string",
+          "description": "What the summary said should happen"
+        },
+        "verdict": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "SKIP", "ABORTED"]
+        },
+        "verdict_detail": {
+          "type": "string",
+          "description": "Explanation of the verdict when not obvious"
+        },
+        "severity": {
+          "type": "object",
+          "description": "Only for FAIL verdicts",
+          "properties": {
+            "exploitability": { "type": "integer", "minimum": 0, "maximum": 4 },
+            "impact": { "type": "integer", "minimum": 0, "maximum": 3 },
+            "data_sensitivity": { "type": "integer", "minimum": 0, "maximum": 2 },
+            "fixability": { "type": "integer", "minimum": 0, "maximum": 1 },
+            "total": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "level": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] }
+          }
+        },
+        "fix_applied": {
+          "type": "object",
+          "description": "Only if auto-fix was attempted",
+          "properties": {
+            "applied": { "type": "boolean" },
+            "file": { "type": "string" },
+            "lines": { "type": "string" },
+            "diff": { "type": "string" },
+            "re_test_verdict": { "type": "string", "enum": ["PASS", "FAIL"] }
+          }
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["file_created", "file_modified", "db_row_inserted", "db_row_modified", "log_written"] },
+              "path": { "type": "string" },
+              "reverted": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,144 @@
+name: Adversarial Testing
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target product/feature to test'
+        required: true
+      mode:
+        description: 'Test mode'
+        type: choice
+        options:
+          - full
+          - summary-only
+        default: full
+      attack_categories:
+        description: 'Attack categories (comma-separated, e.g. A1,A2,B1)'
+        default: 'A1,A2,A3'
+
+env:
+  SKILL_REPO: 'kieranhoward/adversarial-testing-skill'
+  SKILL_VERSION: 'v2.0'
+
+jobs:
+  adversarial-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+
+      - name: Checkout adversarial-testing skill
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SKILL_REPO }}
+          ref: ${{ env.SKILL_VERSION }}
+          path: .adversarial-testing
+
+      # ── Phase 1: Developer AI produces summary ──
+      - name: Generate adversarial test summary
+        id: summary
+        run: |
+          echo "## Phase 1: Developer AI — Generating Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Target: ${{ inputs.target || github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "Mode: ${{ inputs.mode || 'full' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 See artifact 'adversarial-test-summary.md' for the full summary." >> $GITHUB_STEP_SUMMARY
+          echo "summary_generated=true" >> $GITHUB_OUTPUT
+
+      # ── Phase 2: Adversarial AI executes tests ──
+      - name: Execute adversarial tests
+        if: ${{ inputs.mode != 'summary-only' }}
+        run: |
+          echo "## Phase 2: Adversarial AI — Executing Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Attack categories: ${{ inputs.attack_categories }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ Safety protocol enforced:" >> $GITHUB_STEP_SUMMARY
+          echo "- No DROP/TRUNCATE/unconditional DELETE" >> $GITHUB_STEP_SUMMARY
+          echo "- No production data modification" >> $GITHUB_STEP_SUMMARY
+          echo "- No external requests (email/SMS/payment)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 See artifact 'adversarial-test-report.md' for the full report." >> $GITHUB_STEP_SUMMARY
+
+      # ── Upload artifacts ──
+      - name: Upload summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-test-summary
+          path: adversarial-test-summary-*.md
+          retention-days: 30
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-test-report
+          path: adversarial-test-report-*.md
+          retention-days: 30
+
+      - name: Upload audit log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-test-audit-log
+          path: adversarial-test-audit-*.json
+          retention-days: 90
+
+      # ── PR comment ──
+      - name: Post results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportFiles = fs.readdirSync('.').filter(f => f.startsWith('adversarial-test-report-'));
+            const summaryFiles = fs.readdirSync('.').filter(f => f.startsWith('adversarial-test-summary-'));
+
+            let body = '## 🔴 Adversarial Test Results\n\n';
+
+            // Count findings from report if available
+            if (reportFiles.length > 0) {
+              const report = fs.readFileSync(reportFiles[0], 'utf8');
+              const passMatch = report.match(/PASS[:\s]*(\d+)/);
+              const failMatch = report.match(/FAIL[:\s]*(\d+)/);
+              const passCount = passMatch ? parseInt(passMatch[1]) : 0;
+              const failCount = failMatch ? parseInt(failMatch[1]) : 0;
+              const total = passCount + failCount;
+              const rate = total > 0 ? ((passCount / total) * 100).toFixed(1) : 'N/A';
+
+              body += `| Metric | Value |\n`;
+              body += `|--------|-------|\n`;
+              body += `| Tests Run | ${total} |\n`;
+              body += `| Passed | ${passCount} |\n`;
+              body += `| Failed | ${failCount} |\n`;
+              body += `| Pass Rate | ${rate}% |\n`;
+
+              if (failCount > 0) {
+                body += `\n⚠️ **${failCount} failing tests** — review the report artifact for details.\n`;
+              } else {
+                body += `\n✅ All tests passed.\n`;
+              }
+            } else if (summaryFiles.length > 0) {
+              body += '✅ Adversarial test summary generated. See artifact for details.\n';
+            } else {
+              body += '⚠️ No test artifacts found. The test run may have failed.\n';
+            }
+
+            body += '\n[View workflow run](' + context.payload.repository.html_url + '/actions/runs/' + context.runId + ')';
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

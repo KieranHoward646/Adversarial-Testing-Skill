@@ -218,8 +218,10 @@ If no summary path provided, ask: "请提供开发者AI生成的摘要文件路�
 | `developer-ai-spec.md` | Developer AI output format specification (9-section) |
 | `adversarial-ai-spec.md` | Adversarial AI safety & testing protocol (4-phase) |
 | `templates/summary-template.md` | Blank adversarial test summary template |
-| `templates/report-template.md` | Blank test report template |
+| `templates/report-template.md` | Blank test report template (with severity + coverage) |
 | `templates/rules-of-engagement.md` | Pre-test scope and boundary definition |
+| `templates/severity-scoring.md` | CVSS-like vulnerability scoring system (0-10) |
+| `templates/audit-log-schema.json` | Structured JSON schema for replayable audit logs |
 | `payloads/injection-payloads.md` | SQL/XSS/Command/SSTI injection payloads (A2) |
 | `payloads/llm-payloads.md` | Prompt injection, jailbreak, system prompt leakage payloads (B1-B8) |
 | `payloads/ssl-payloads.md` | SSL/TLS certificate mutation strategies (C1-C2) |
@@ -231,3 +233,11 @@ If no summary path provided, ask: "请提供开发者AI生成的摘要文件路�
 | `cursor/` | Cursor IDE (.cursorrules + install guide) |
 | `claude-code/` | Claude Code (CLAUDE.md + install guide) |
 | `generic/` | Any AI assistant (self-contained DEVELOPER.md + ADVERSARIAL.md)
+
+### CI/CD & Community
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/adversarial-test.yml` | GitHub Actions workflow template for PR-triggered testing |
+| `CONTRIBUTING.md` | How to contribute payloads, adapters, and improvements |
+| `community/test-case-template.md` | Template for community-submitted test cases
