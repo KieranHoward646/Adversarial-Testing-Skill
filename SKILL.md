@@ -225,11 +225,14 @@ If no summary path provided, ask: "请提供开发者AI生成的摘要文件路�
 | `templates/report-formats.md` | Multi-format output: SARIF (GitHub Security), JSON, HTML |
 | `templates/operation-approval-chain.md` | Hard-coded safety rule engine (7 rules: BLOCK/APPROVAL) |
 | `templates/patch-generation.md` | Unified diff Patch generation spec for auto-fixes |
+| `templates/docker-sandbox.md` | Docker sandbox template, Dockerfile, and hardening guide |
+| `templates/trend-report.md` | Trend comparison template for audit log diff across runs |
 | `payloads/injection-payloads.md` | SQL/XSS/Command/SSTI injection payloads (A2) |
 | `payloads/jwt-payloads.md` | JWT tampering: alg confusion, claim manipulation, key injection |
 | `payloads/ssrf-payloads.md` | SSRF: internal probes, cloud metadata, bypass techniques |
 | `payloads/deserialization-payloads.md` | Deserialization: Pickle, Java, PHP, Node.js, .NET |
 | `payloads/file-upload-payloads.md` | File upload: web shells, path traversal, Zip Slip |
+| `payloads/tech-stack-mapping.md` | Tech stack → payload prioritization reference |
 | `payloads/llm-payloads.md` | Prompt injection, jailbreak, system prompt leakage payloads (B1-B8) |
 | `payloads/ssl-payloads.md` | SSL/TLS certificate mutation strategies (C1-C2) |
 
