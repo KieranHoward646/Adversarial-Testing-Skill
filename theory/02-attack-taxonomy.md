@@ -23,13 +23,17 @@
 
 验证系统是否正确隔离代码与数据。
 
-| 类型 | 载荷示例 |
-|------|---------|
-| SQL 注入 | `' OR '1'='1`, `'; DROP TABLE--`, 时间盲注 `SLEEP(5)` |
-| 命令注入 | `` `whoami` ``, `$(cat /etc/passwd)` |
-| XSS | `<script>alert(1)</script>`, `<img onerror=...>` |
-| 路径穿越 | `../../etc/passwd` |
-| NoSQL 注入 | `{"$gt": ""}`, `{"$ne": null}` |
+| 类型 | 载荷示例 | 详情 |
+|------|---------|------|
+| SQL 注入 | `' OR '1'='1`, `'; DROP TABLE--`, 时间盲注 `SLEEP(5)` | `payloads/injection-payloads.md` |
+| 命令注入 | `` `whoami` ``, `$(cat /etc/passwd)` | `payloads/injection-payloads.md` |
+| XSS | `<script>alert(1)</script>`, `<img onerror=...>` | `payloads/injection-payloads.md` |
+| 路径穿越 | `../../etc/passwd` | `payloads/injection-payloads.md` |
+| NoSQL 注入 | `{"$gt": ""}`, `{"$ne": null}` | `payloads/injection-payloads.md` |
+| JWT 篡改 | 算法混淆(RS256→HS256)、alg:none、声明篡改、kid 注入 | `payloads/jwt-payloads.md` |
+| SSRF | 内网探测、云元数据、重定向链、协议走私(file/dict/gopher) | `payloads/ssrf-payloads.md` |
+| 反序列化 | Pickle RCE、ysoserial、Fastjson、node-serialize、PHP 魔法方法 | `payloads/deserialization-payloads.md` |
+| 文件上传 | Web Shell、路径穿越文件名、Zip Slip、多语言文件 | `payloads/file-upload-payloads.md` |
 
 ### A3. 权限与认证测试
 
