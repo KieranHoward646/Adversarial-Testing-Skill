@@ -253,7 +253,35 @@ MIT © 2026 Kieran Howard
 
 ### 核心理念
 
-两个 AI 协作，但彼此**信息隔离**——开发者 AI 深度理解代码，对抗测试 AI **完全看不到源码**，只能从结构化摘要推断系统行为。这和真实攻击者的处境一模一样。
+```
+你 → "对抗测试 我的登录API"
+         │
+         ▼
+  ┌──────────────┐    ┌──────────────────┐
+  │ 开发者 AI     │───▶│ 结构化摘要         │   只有摘要
+  │（阅读源码）    │    │                  │───▶被传递过去
+  └──────────────┘    └──────────────────┘
+                              │
+                              ▼
+                       ┌──────────────┐
+                       │ 对抗测试 AI   │   对源码
+                       │（盲测）       │   一无所知
+                       └──────┬───────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+         🛡️ 执行测试     🔧 自动修复      📊 输出报告
+         (8 大攻击      (diff Patch)    (SARIF+JSON
+          类别)                          +HTML+MD)
+```
+
+**对抗测试 AI 故意被设计为对源码盲测**——和真实攻击者一样，只能从接口行为推断系统弱点。
+
+### 为什么需要这个框架？
+
+AI 系统有全新的攻击面：**自然语言**。2025 年全球 Prompt Injection 攻击损失约 $2.3B。传统测试工具解析不了自然语言攻击——这个框架填补了空白。**用 AI 测试 AI。**
+
+---
 
 ## 🚀 快速开始
 
@@ -264,35 +292,176 @@ git clone git@gitee.com:kieranhoward/adversarial-testing-skill.git \
   ~/.workbuddy/skills/adversarial-testing
 ```
 
-然后说：
+然后直接说：
 
 ```
-@adversarial-testing 我的产品
+@adversarial-testing 我的产品        # 全流水线（默认，双 Agent 协作）
+@adversarial-testing sequential 我的产品  # 先审核摘要再放行测试
+@adversarial-testing developer 我的产品   # 仅出摘要
+@adversarial-testing adversarial 摘要.md  # 仅执行测试
 ```
 
-两个独立 AI Agent 自动派生——开发者分析出摘要，对抗者执行攻击。
+WorkBuddy 原生派生两个独立 Agent —— 真正的上下文隔离。
+
+### 其他平台
+
+```bash
+git clone git@gitee.com:kieranhoward/adversarial-testing-skill.git
+cd adversarial-testing-skill
+
+# Cursor
+cp adapters/cursor/.cursorrules /你的项目/
+cp tools/developer-ai-spec.md /你的项目/.cursor/rules/dev-spec.md
+cp tools/adversarial-ai-spec.md /你的项目/.cursor/rules/adv-spec.md
+
+# Claude Code
+cp adapters/claude-code/CLAUDE.md /你的项目/
+
+# 任意 AI 助手（TRAE, Codex, Copilot, Windsurf...）
+# 使用 adapters/generic/ 下的自包含提示词文件
+```
+
+---
+
+## 🏗 架构
+
+```
+adversarial-testing/
+│
+├── 📚 theory/               "为什么 & 怎么做"
+│   ├── 01-overview           核心概念
+│   ├── 02-attack-taxonomy    四大类攻击体系 (A/B/C/D)
+│   ├── 03-methodology        四阶段工作流
+│   ├── 04-case-studies       2023-2026 真实安全事件
+│   └── 05-roadmap            30/60/90 天实施路线图
+│
+├── 🔧 tools/                "执行引擎"
+│   ├── developer-ai-spec     开发者 AI 规范：如何产出摘要
+│   ├── adversarial-ai-spec   对抗测试 AI 规范：如何安全测试
+│   │
+│   ├── templates/            10 个实战模板
+│   │   ├── summary            摘要 + 报告结构模板
+│   │   ├── report
+│   │   ├── rules-of-engagement  交战规则（法律/安全边界）
+│   │   ├── severity-scoring     类 CVSS 0-10 评分体系
+│   │   ├── audit-log-schema     可重放 JSON 审计日志
+│   │   ├── report-formats       SARIF / JSON / HTML 多格式
+│   │   ├── operation-approval   7 条硬编码安全规则引擎
+│   │   ├── patch-generation     自动修复 diff 生成
+│   │   ├── docker-sandbox       容器隔离模板
+│   │   └── trend-report         历史对比趋势报告
+│   │
+│   └── payloads/             8 个攻击载荷库
+│       ├── injection           SQL/XSS/SSTI/命令注入
+│       ├── jwt                 JWT 算法混淆、声明篡改
+│       ├── ssrf                云元数据探测、8 种绕过手法
+│       ├── deserialization     Pickle/Java/PHP/Node/.NET
+│       ├── file-upload         Web Shell、Zip Slip、魔术字节
+│       ├── llm                 越狱、提示词注入、多模态攻击
+│       ├── ssl                 证书变异 + 差分测试
+│       └── tech-stack-mapping  技术栈 → 载荷智能匹配
+│
+├── 🔌 adapters/             "跨平台适配"
+│   ├── cursor/               .cursorrules + 规范文件
+│   ├── claude-code/           CLAUDE.md
+│   └── generic/               自包含提示词（任意 AI 可用）
+│
+├── ⚙️ .github/workflows/    "CI/CD"
+│   └── adversarial-test.yml  PR 触发 → 自动测试 → PR 评论
+│
+├── 👥 community/             "生态"
+│   └── test-case-template    提交你自己的攻击用例
+│
+└── 🤝 CONTRIBUTING.md        贡献指南
+```
+
+---
 
 ## ✨ 核心能力
 
-| 维度 | 能力 |
-|------|------|
-| **攻击覆盖** | 18 类攻击，200+ 载荷（通用 6 类 + LLM 8 类 + 网络 + ML） |
-| **安全机制** | 三层防御：Docker 沙箱 → 硬编码审批链（7 条规则）→ AI 约束 |
-| **报告输出** | Markdown + SARIF（直通 GitHub Security）+ JSON + HTML |
-| **CI/CD** | PR 自动触发测试，结果直接评论在 PR 上 |
-| **严重度** | 类 CVSS 四维评分（可利用性 × 影响 × 敏感性 × 可修复性） |
-| **审计** | 每一步可回溯重放的 JSON 日志 |
-| **覆盖率** | 追踪哪些端点已测、未测及原因 |
-| **趋势** | 跨轮次安全态势对比 |
-| **多平台** | WorkBuddy / Cursor / Claude Code / 通用（TRAE, Codex, Copilot...） |
-| **自动修复** | 安全漏洞自动生成 unified diff Patch |
+### 🎯 攻击覆盖
+
+| 类别 | 范围 | 载荷数 |
+|------|------|:------:|
+| **A — 通用软件** | 6 类（边界、注入、权限、并发、异常、业务逻辑） | 100+ |
+| **B — LLM/AI** | 8 类（提示词注入、越狱、系统泄露、投毒、Agent 攻击、多模态...） | 50+ |
+| **C — 网络协议** | SSL/TLS 证书验证、协议状态机 | 30+ |
+| **D — ML 模型** | 逃避攻击、投毒、模型窃取 | 20+ |
+
+### 🛡️ 三层安全防线
+
+不靠一句"注意安全"的 prompt 约束——而是真正的纵深防御：
+
+```
+第一层：Docker 沙箱    ← OS 级隔离（只读文件系统、移除特权）
+第二层：硬编码审批链    ← 7 条规则引擎（DROP/SYSTEM/PROD = 直接拒绝）
+第三层：AI 指令约束     ← 自然语言护栏（最后一道防线）
+```
+
+### 📊 企业级报告
+
+- **SARIF** → 一行 CI 配置，直通 GitHub Security Tab
+- **JSON** → 机器消费（SOAR/SIEM/自定义 Dashboard）
+- **Markdown** → 人类审阅
+- **HTML** → 可视化面板
+- **严重度评分** → 四维度 0-10 分（可利用性 × 影响范围 × 数据敏感性 × 可修复性）
+- **审计日志** → 每一步可回溯重放
+- **覆盖率追踪** → 哪些端点已测、哪些遗漏、遗漏原因
+- **趋势报告** → 跨轮次安全态势变化（新增/修复/复现）
+
+### 🔄 CI/CD 原生
+
+```yaml
+# .github/workflows/adversarial-test.yml
+# PR 提交 → 自动触发对抗测试 → 结果作为 PR 评论
+# 发现 Critical 漏洞？自动上传 SARIF 到 GitHub Security Tab
+```
+
+### 🌍 跨平台
+
+| 平台 | 多 Agent？ | 安装 |
+|------|:------:|------|
+| **WorkBuddy** | ✅ 原生 | `@adversarial-testing` 一句话 |
+| **Cursor** | ✅ 双会话 | 复制规则文件 |
+| **Claude Code** | ✅ 双终端 | 复制 CLAUDE.md |
+| **任意 AI** | ⚠️ 手动 | 复制自包含提示词 |
+
+---
 
 ## 📊 框架规模
 
-38 个文件 · 5 篇理论指南 · 10 个模板 · 8 个载荷库 · 4 个平台适配器 · 7 条硬编码安全规则
+| 指标 | 数量 |
+|------|:----:|
+| 总文件数 | 38 |
+| 理论指南 | 5 篇 |
+| 可执行模板 | 10 个 |
+| 攻击载荷库 | 8 个 |
+| 平台适配器 | 4 个 |
+| 攻击分类覆盖 | 18 类 |
+| 硬编码安全规则 | 7 条 |
+| 真实案例 | 15+ |
+
+---
+
+## 🗺️ 从哪里开始？
+
+| 你是... | 从这里开始 |
+|--------|-----------|
+| **新用户** | `theory/01-overview.md` → 理解"为什么" |
+| **开发者想测自己的产品** | `@adversarial-testing 我的产品` |
+| **安全研究员** | `theory/02-attack-taxonomy.md` + `tools/payloads/` |
+| **团队负责人** | `theory/05-roadmap.md` → 30/60/90 天计划 |
+| **贡献者** | `CONTRIBUTING.md` + `community/test-case-template.md` |
 
 ---
 
 ## 📜 许可证
 
 MIT © 2026 Kieran Howard
+
+---
+
+<p align="center">
+  <sub>Built with • anger at insecure software • respect for real red teams • and a lot of Markdown</sub>
+</p>
+
